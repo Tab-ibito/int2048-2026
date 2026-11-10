@@ -22,11 +22,11 @@ namespace sjtu
     }
     int2048::int2048(const std::string & input) {
         int end = 0, cnt = 0;
+        if (input == "0" || input == "-0") return;
         if (input[0] == '-') {
             is_positive = false;
             end = 1;
         }
-        if (input == "0") return;
         size_t cell = 0, base = 1;
         for (int i = input.size() - 1; i >= end; i--) {
             cell += (base * (input[i] - 48));
@@ -230,6 +230,13 @@ namespace sjtu
             this->digits.push_back(cell);
         }
         return *this;
+    }
+    // 输入
+    std::istream &operator>>(std::istream &is, int2048 &instance) {
+        std::string input;
+        is >> input;
+        instance = int2048(input);
+        return is;
     }
 
     // 输出

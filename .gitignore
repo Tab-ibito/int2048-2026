@@ -2,4 +2,5 @@
 .vscode/
 data/Corner
 build/
-  
+src/main
+src/main.cpp
