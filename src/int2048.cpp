@@ -11,8 +11,7 @@ namespace sjtu
     }
     int2048::int2048(long long input) {
         is_positive = input >= 0;
-        unsigned long long value =
-            static_cast<unsigned long long>(input);
+        unsigned long long value = static_cast<unsigned long long>(input);
         if (input < 0) value = 0ULL - value;
         while (value != 0) {
             digits.push_back(value % M);
@@ -37,6 +36,12 @@ namespace sjtu
                 cell = 0;
                 base = 1;
             }
+        }
+        while (!digits.empty() && digits.back() == 0) {
+            digits.pop_back();
+        }
+        if (digits.empty()) {
+            is_positive = true;
         }
     }
     int2048::int2048(const int2048 &right) {
