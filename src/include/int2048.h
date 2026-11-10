@@ -24,6 +24,9 @@ namespace sjtu
         // todo
         bool is_positive = true;
         std::vector<size_t> digits;
+
+        void add_abs(const int2048 &right);
+        void subtract_abs(const int2048 &right);
     public:
         // 构造函数
         int2048();
@@ -73,22 +76,22 @@ namespace sjtu
         }
 
         // 加上一个大整数
-        int2048 &add(const int2048 &right) {
+        int2048 &add(const int2048 right) {
             *this += right;
             return *this;
         }
         // 返回两个大整数之和
-        friend int2048 add(int2048 left, const int2048 &right) {
+        friend int2048 add(int2048 left, const int2048 right) {
             return left + right;
         }
 
         // 减去一个大整数
-        int2048 &minus(const int2048 &right) {
+        int2048 &minus(const int2048 right) {
             *this -= right;
             return *this;
         }
         // 返回两个大整数之差
-        friend int2048 minus(int2048 left, const int2048 &right) {
+        friend int2048 minus(int2048 left, const int2048 right) {
             return left - right;
         }
 

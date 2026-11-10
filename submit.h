@@ -24,6 +24,10 @@ namespace sjtu
         // todo
         bool is_positive = true;
         std::vector<size_t> digits;
+
+        // 原地进行绝对值加减；减法在右侧绝对值更大时翻转结果符号。
+        void add_abs(const int2048 &right);
+        void subtract_abs(const int2048 &right);
     public:
         // 构造函数
         int2048();
@@ -64,21 +68,33 @@ namespace sjtu
         // ===================================
 
         // 读入一个大整数
-        void read(const std::string &) {
-            
+        void read(const std::string &input) {
+            *this = int2048(input);
         }
         // 输出储存的大整数，无需换行
-        void print();
+        void print() {
+            std::cout << *this;
+        }
 
         // 加上一个大整数
-        int2048 &add(const int2048 &);
+        int2048 &add(const int2048 right) {
+            *this += right;
+            return *this;
+        }
         // 返回两个大整数之和
-        friend int2048 add(int2048, const int2048 &);
+        friend int2048 add(int2048 left, const int2048 right) {
+            return left + right;
+        }
 
         // 减去一个大整数
-        int2048 &minus(const int2048 &);
+        int2048 &minus(const int2048 right) {
+            *this -= right;
+            return *this;
+        }
         // 返回两个大整数之差
-        friend int2048 minus(int2048, const int2048 &);
+        friend int2048 minus(int2048 left, const int2048 right) {
+            return left - right;
+        }
 
         // ===================================
         // Integer2
@@ -138,11 +154,11 @@ namespace sjtu
     }
     int2048::int2048(const std::string & input) {
         int end = 0, cnt = 0;
+        if (input == "0" || input == "-0") return;
         if (input[0] == '-') {
             is_positive = false;
             end = 1;
         }
-        if (input == "0") return;
         size_t cell = 0, base = 1;
         for (int i = input.size() - 1; i >= end; i--) {
             cell += (base * (input[i] - 48));
@@ -170,39 +186,23 @@ namespace sjtu
     }
     int2048 int2048::operator-() const {
         int2048 new_instance = *this;
+        if(this->get_digits() == 0) return *this;
         new_instance.is_positive ^= 1;
         return new_instance;
     }
 
-    // 加法（默认处理两个正数）
-    int2048& int2048::operator+=(const int2048 &right) {
-        // 条件判断
-        if (!this->is_positive && !right.is_positive) {
-            *this = -(*this);
-            *this += (-right);
-            *this = -(*this);
-            return *this;
-        }
-        if (this->is_positive && !right.is_positive) {
-            *this -= (-right);
-            return *this;
-        }
-        if (!this->is_positive && right.is_positive) {
-            *this = -(*this);
-            *this -= right;
-            *this = -(*this);
-            return *this;
-        }
-        // 主体逻辑，处理两个正数
+    // 只处理两个正数相加
+    void int2048::add_abs(const int2048 &right) {
         size_t carry = 0;
-        while (right.get_digits() > this->get_digits()) {
-            this->digits.push_back(0);
+        const int right_size = right.get_digits();
+        if (right_size > this->get_digits()) {
+            this->digits.resize(right_size, 0);
         }
         int i = 0;
-        while (i < right.get_digits()) {
-            size_t new_val = (this->digits[i] + right.digits[i] + carry) % M;
-            carry = (this->digits[i] + right.digits[i] + carry) / M;
-            this->digits[i] = new_val;
+        while (i < right_size) {
+            size_t sum = this->digits[i] + right.digits[i] + carry;
+            this->digits[i] = sum % M;
+            carry = sum / M;
             i++;
         }
         while (carry != 0 && i < this->get_digits()) {
@@ -212,78 +212,92 @@ namespace sjtu
             i++;
         }
         if (carry != 0) this->digits.push_back(carry);
+        if (this->digits.empty()) this->is_positive = true;
+    }
+
+    // 统一处理 +=
+    int2048& int2048::operator+=(const int2048 &right) {
+        if (this->is_positive == right.is_positive) {
+            add_abs(right);
+        } else {
+            subtract_abs(right);
+        }
         return *this;
     }
     int2048 operator+(int2048 left, const int2048 &right) {
-        int2048 res = left;
-        res += right;
-        return res;
+        left += right;
+        return left;
     }
 
-    // 减法：默认处理大的正数减去小的正数
+    // 只处理两个正数相减
+    void int2048::subtract_abs(const int2048 &right) {
+        int left_size = this->get_digits(), right_size = right.get_digits();
+        bool reverse = left_size < right_size;
+        if (left_size == right_size) {
+            for (int i = left_size - 1; i >= 0; i--) {
+                if (this->digits[i] != right.digits[i]) {
+                    reverse = this->digits[i] < right.digits[i];
+                    break;
+                }
+            }
+        }
+        if (right_size > left_size) {
+            this->digits.resize(right_size, 0);
+        }
+        size_t borrow = 0;
+        for (int i = 0; i < right_size || borrow != 0; i++) {
+            size_t left_digit = this->digits[i];
+            size_t right_digit = i < right_size ? right.digits[i] : 0;
+            size_t minu_end = reverse ? right_digit : left_digit;
+            size_t subtra_hend = (reverse ? left_digit : right_digit) + borrow;
+            borrow = minu_end < subtra_hend;
+            this->digits[i] = minu_end + borrow * M - subtra_hend;
+        }
+        while (!this->digits.empty() && this->digits.back() == 0) this->digits.pop_back();
+        if (reverse) this->is_positive = !this->is_positive;
+        if (this->digits.empty()) this->is_positive = true;
+    }
+
+    // 统一处理 -= 情况
     int2048& int2048::operator-=(const int2048 &right) {
-        // 条件判断
-        if (!this->is_positive && right.is_positive) {
-            *this = -(*this);
-            *this += right;
-            *this = -(*this);
-            return *this;
+        if (this->is_positive != right.is_positive) {
+            add_abs(right);
+        } else {
+            subtract_abs(right);
         }
-        if (this->is_positive && !right.is_positive) {
-            *this += (-right);
-            return *this;
-        }
-        if (!this->is_positive && !right.is_positive) {
-            *this = -(*this);
-            *this -= (-right);
-            *this = -(*this);
-            return *this;
-        }
-        if (*this < right) {
-            int2048 tmp = *this;
-            *this = right;
-            *this -= tmp;
-            *this = -(*this);
-            return *this;
-        }
-        // 主体：大的正数减去小的正数
-        size_t carry = 0, carry_this_digit = 0;
-        int i = 0;
-        while (i < right.get_digits()) {
-            carry_this_digit = carry;
-            if (this->digits[i] < right.digits[i] + carry) carry = 1;
-            size_t new_val = (this->digits[i] + carry * M - carry_this_digit - right.digits[i]) % M; // 防止 unsigned 溢出
-            this->digits[i] = new_val;
-            i++;
-        }
-        while (carry != 0 && i < this->get_digits() - 1) {
-            carry_this_digit = carry;
-            if (this->digits[i] < carry) carry = 1;
-            size_t new_val = (this->digits[i] + carry * M - carry_this_digit) % M; // 防止 unsigned 溢出
-            this->digits[i] = new_val;
-            i++;
-        }
-        if (carry != 0) this->digits.pop_back();
         return *this;
     }
 
     int2048 operator-(int2048 left, const int2048 &right) {
-        int2048 res = left;
-        return res -= right;
+        left -= right;
+        return left;
     }
 
     // 乘法
     int2048& int2048::operator*=(const int2048 &right) {
         // 确认符号
         bool sig = !(this->is_positive ^ right.is_positive);
+        if (this->digits.empty() || right.digits.empty()){
+            *this = int2048(0);
+            return *this;
+        }
+        // 优化：希望小数 * 大数
+        if (this->get_digits() > right.get_digits()) {
+            int2048 res = right * *this;
+            *this = res;
+            return *this;
+        }
         // 主要部分
-        int2048 res("0");
+        int2048 res;
         for (int i=0; i<this->get_digits(); i++) {
-            int2048 tmp("0");
+            int2048 tmp;
+            size_t carry = 0;
             for (int j=0; j<right.get_digits(); j++) {
-                int2048 mul(this->digits[i] * right.digits[j]);
-                tmp += lshift(mul, j);
+                size_t new_val = (this->digits[i] * right.digits[j] + carry) % M;
+                carry = (this->digits[i] * right.digits[j] + carry) / M;
+                tmp.digits.push_back(new_val);
             }
+            if (carry != 0) tmp.digits.push_back(carry);
             int2048 tmp_shifted = lshift(tmp, i);
             res += tmp_shifted;
         }
@@ -292,40 +306,72 @@ namespace sjtu
         return *this;
     }
     int2048 operator*(int2048 left, const int2048 &right) {
-        int2048 res = left;
-        return res *= right;
+        left *= right;
+        return left;
     }
     // 除法
     int2048& int2048::operator/=(const int2048 &right) {
         // 确认符号
         bool sig = !(this->is_positive ^ right.is_positive);
+        if (this->digits.empty() || right.digits.empty()){
+            *this = int2048(0);
+            return *this;
+        }
         // 主要部分
-        int2048 res("0");
+        int2048 res;
+        int2048 abs_right = right;
+        abs_right.is_positive = true;
         int2048 remaining = *this;
         remaining.is_positive = true;
         bool filled = false; // 第一次找到大于0的商时确定最高位，将res填充相应的零
         int k = this->get_digits() - 1; // 被除数参与长除法的最低位
-        while (k >= 0) {
-            int2048 divided = rshift(remaining, k);
-            while (divided < right && k >= 0) {
-                k--;
-                divided = rshift(remaining, k);   
-            }
-            if (k < 0) break;
-            if (!filled) {
-                filled = true;
-                for (int i=0; i<=k; i++) {
-                    res.digits.push_back(0);
+        if (right.get_digits() == 1) {
+            // 特殊情况：处理除数只有一位的情况
+            size_t d = right.digits[0];
+            while (k >= 0) {
+                size_t divided = remaining.digits[k];
+                if (divided < d && k >= 0) {
+                    // 最多移动一次就能出结果
+                    k--;
+                    divided = divided * M + remaining.digits[k];
                 }
-            }
-            // 试商 (Naive)
-            for (size_t j = M; j > 0; j--) {
-                int2048 d(j);
-                if (d * right <= divided) {
-                    res.digits[k] = j;
-                    remaining -= lshift((d * right), k);
-                    break;
+                if (k < 0) break;
+                if (!filled) {
+                    filled = true;
+                    for (int i=0; i<=k; i++) {
+                        res.digits.push_back(0);
+                    }
                 }
+                res.digits[k] = divided / d;
+                remaining -= lshift(int2048(divided / d) * d, k);
+            }
+        } else {
+            // 一般情况
+            while (k >= 0) {
+                int2048 divided = rshift(remaining, k);
+                while (divided < abs_right && k >= 0) {
+                    k--;
+                    divided = rshift(remaining, k);
+                }
+                if (k < 0) break;
+                if (!filled) {
+                    filled = true;
+                    for (int i=0; i<=k; i++) {
+                        res.digits.push_back(0);
+                    }
+                }
+                //二分试商
+                size_t upper = M - 1, lower = 1;
+                while (lower <= upper) {
+                    size_t mid = lower + (upper - lower) / 2;
+                    if (int2048(mid) * abs_right > divided) {
+                        upper = mid - 1;
+                    } else {
+                        lower = mid + 1;
+                    }
+                }
+                res.digits[k] = upper;
+                remaining -= lshift(int2048(upper) * abs_right, k);
             }
         }
         res.is_positive = sig;
@@ -334,8 +380,19 @@ namespace sjtu
         return *this;
     }
     int2048 operator/(int2048 left, const int2048 &right) {
-        int2048 res = left;
-        return res /= right;
+        left /= right;
+        return left;
+    }
+
+    // 取模
+    int2048& int2048::operator%=(const int2048 &right) {
+        int2048 res = *this - (*this / right) * right;
+        *this = res;
+        return *this;
+    }
+    int2048 operator%(int2048 left, const int2048 &right) {
+        left -= (left / right) * right;
+        return left;
     }
 
     // 赋值等号
@@ -346,6 +403,14 @@ namespace sjtu
             this->digits.push_back(cell);
         }
         return *this;
+    }
+
+    // 输入
+    std::istream &operator>>(std::istream &is, int2048 &instance) {
+        std::string input;
+        is >> input;
+        instance = int2048(input);
+        return is;
     }
 
     // 输出
@@ -375,7 +440,6 @@ namespace sjtu
         }
         return os;
     }
-
     // 关系比较
     bool operator==(const int2048 &left, const int2048 &right) {
         if (left.is_positive != right.is_positive || left.get_digits() != right.get_digits()) return false;
