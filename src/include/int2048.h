@@ -23,7 +23,7 @@ namespace sjtu
     {
         // todo
         bool is_positive = true;
-        std::vector<size_t> digits;
+        std::vector<unsigned long long> digits;
 
         void add_abs(const int2048 &right);
         void subtract_abs(const int2048 &right);

@@ -2,8 +2,8 @@
 
 namespace sjtu
 {
-    const size_t M = 10000; // 规定每个单元模数是10000
-    const unsigned DIGITAL = 4; // 规定每个单元是四位数
+    const unsigned long long M = 1000000; // 规定每个单元模数是1000000
+    const unsigned DIGITAL = 6; // 规定每个单元是6位数
     const unsigned OUTPUT_M = 10; // 规定输出是十进制
 
     int2048::int2048() {
@@ -25,7 +25,7 @@ namespace sjtu
             is_positive = false;
             end = 1;
         }
-        size_t cell = 0, base = 1;
+        unsigned long long cell = 0, base = 1;
         for (int i = input.size() - 1; i >= end; i--) {
             cell += (base * (input[i] - 48));
             base *= 10;
@@ -65,20 +65,20 @@ namespace sjtu
 
     // 只处理两个正数相加
     void int2048::add_abs(const int2048 &right) {
-        size_t carry = 0;
+        unsigned long long carry = 0;
         const int right_size = right.get_digits();
         if (right_size > this->get_digits()) {
             this->digits.resize(right_size, 0);
         }
         int i = 0;
         while (i < right_size) {
-            size_t sum = this->digits[i] + right.digits[i] + carry;
+            unsigned long long sum = this->digits[i] + right.digits[i] + carry;
             this->digits[i] = sum % M;
             carry = sum / M;
             i++;
         }
         while (carry != 0 && i < this->get_digits()) {
-            size_t new_val = (this->digits[i] + carry) % M;
+            unsigned long long new_val = (this->digits[i] + carry) % M;
             carry = (this->digits[i] + carry) / M;
             this->digits[i] = new_val;
             i++;
@@ -116,12 +116,12 @@ namespace sjtu
         if (right_size > left_size) {
             this->digits.resize(right_size, 0);
         }
-        size_t borrow = 0;
+        unsigned long long borrow = 0;
         for (int i = 0; i < right_size || borrow != 0; i++) {
-            size_t left_digit = this->digits[i];
-            size_t right_digit = i < right_size ? right.digits[i] : 0;
-            size_t minu_end = reverse ? right_digit : left_digit;
-            size_t subtra_hend = (reverse ? left_digit : right_digit) + borrow;
+            unsigned long long left_digit = this->digits[i];
+            unsigned long long right_digit = i < right_size ? right.digits[i] : 0;
+            unsigned long long minu_end = reverse ? right_digit : left_digit;
+            unsigned long long subtra_hend = (reverse ? left_digit : right_digit) + borrow;
             borrow = minu_end < subtra_hend;
             this->digits[i] = minu_end + borrow * M - subtra_hend;
         }
@@ -163,11 +163,11 @@ namespace sjtu
         int2048 res;
         if (this->get_digits() == 1) {
             // 特殊情况
-            size_t a = this->digits[0];
-            size_t carry = 0;
+            unsigned long long a = this->digits[0];
+            unsigned long long carry = 0;
             res.digits.resize(right.get_digits());
             for (int j=0; j<right.get_digits(); j++) {
-                size_t new_val = (a * right.digits[j] + carry) % M;
+                unsigned long long new_val = (a * right.digits[j] + carry) % M;
                 carry = (a * right.digits[j] + carry) / M;
                 res.digits[j] = new_val;
             }
@@ -176,9 +176,9 @@ namespace sjtu
             // 一般情况
             for (int i=0; i<this->get_digits(); i++) {
                 int2048 tmp;
-                size_t carry = 0;
+                unsigned long long carry = 0;
                 for (int j=0; j<right.get_digits(); j++) {
-                    size_t new_val = (this->digits[i] * right.digits[j] + carry) % M;
+                    unsigned long long new_val = (this->digits[i] * right.digits[j] + carry) % M;
                     carry = (this->digits[i] * right.digits[j] + carry) / M;
                     tmp.digits.push_back(new_val);
                 }
@@ -211,9 +211,9 @@ namespace sjtu
         int k = this->get_digits() - 1; // 被除数参与长除法的最低位
         if (right.get_digits() == 1) {
             // 特殊情况：处理除数只有一位的情况
-            size_t d = right.digits[0], remaining = this->digits[k];
+            unsigned long long d = right.digits[0], remaining = this->digits[k];
             while (k >= 0) {
-                size_t divided = remaining;
+                unsigned long long divided = remaining;
                 if (divided < d && k >= 0) {
                     // 最多移动一次就能出结果
                     k--;
@@ -246,15 +246,15 @@ namespace sjtu
                     res.digits.resize(k+1, 0);
                 }
                 //二分试商
-                size_t upper = M, lower = 1;
+                unsigned long long upper = M, lower = 1;
                 int2048 trial;
                 while (lower <= upper) {
                     // 直接单独复用 trial 尝试乘积运算，避免不必要复制开销
-                    size_t mid = lower + (upper - lower) / 2;
+                    unsigned long long mid = lower + (upper - lower) / 2;
                     trial.digits.resize(abs_right.get_digits(), 0);
-                    size_t carry = 0;
+                    unsigned long long carry = 0;
                     for (int i = 0; i < abs_right.get_digits(); i++) {
-                        size_t new_val = (mid * abs_right.digits[i] + carry) % M;
+                        unsigned long long new_val = (mid * abs_right.digits[i] + carry) % M;
                         carry = (mid * abs_right.digits[i] + carry) / M;
                         trial.digits[i] = new_val;
                     }
@@ -318,8 +318,8 @@ namespace sjtu
         }
         for (int i = instance.digits.size() - 1; i >= 0; i--) {
             int cnt = 0;
-            size_t cell = instance.digits[i];
-            size_t cell_copy = cell;
+            unsigned long long cell = instance.digits[i];
+            unsigned long long cell_copy = cell;
             while (cell_copy != 0) {
                 cell_copy /= OUTPUT_M;
                 cnt ++;
