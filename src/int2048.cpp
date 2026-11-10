@@ -54,6 +54,7 @@ namespace sjtu
     }
     int2048 int2048::operator-() const {
         int2048 new_instance = *this;
+        if(this->get_digits() == 0) return *this;
         new_instance.is_positive ^= 1;
         return new_instance;
     }
@@ -135,22 +136,19 @@ namespace sjtu
         int i = 0;
         while (i < right.get_digits()) {
             carry_this_digit = carry;
-            if (this->digits[i] < right.digits[i] + carry) carry = 1;
+            carry = (this->digits[i] < right.digits[i] + carry);
             size_t new_val = (this->digits[i] + carry * M - carry_this_digit - right.digits[i]) % M; // 防止 unsigned 溢出
             this->digits[i] = new_val;
             i++;
         }
-        while (carry != 0 && i < this->get_digits() - 1) {
+        while (carry != 0 && i < this->get_digits()) {
             carry_this_digit = carry;
             if (this->digits[i] < carry) carry = 1;
             size_t new_val = (this->digits[i] + carry * M - carry_this_digit) % M; // 防止 unsigned 溢出
             this->digits[i] = new_val;
             i++;
         }
-        if (carry != 0) {
-            if (this->digits.back() == 1) this->digits.pop_back();
-            else this->digits.back()--;
-        }
+        while (this->digits.back() == 0) this->digits.pop_back();
         return *this;
     }
 
