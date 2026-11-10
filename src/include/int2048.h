@@ -42,11 +42,9 @@ namespace sjtu
         int2048 lshift(const int2048& a, int offset) {
             int2048 shifted;
             shifted.is_positive = a.is_positive;
-            for (int i=0; i<offset; i++) {
-                shifted.digits.push_back(0);
-            }
+            shifted.digits.resize(offset + a.get_digits(), 0);
             for (int i=0; i<a.get_digits(); i++) {
-                shifted.digits.push_back(a.digits[i]);
+                shifted.digits[offset+i] = a.digits[i];
             }
             return shifted;
         }
