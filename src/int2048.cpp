@@ -147,7 +147,10 @@ namespace sjtu
             this->digits[i] = new_val;
             i++;
         }
-        if (carry != 0) this->digits.pop_back();
+        if (carry != 0) {
+            if (this->digits.back() == 1) this->digits.pop_back();
+            else this->digits.back()--;
+        }
         return *this;
     }
 
